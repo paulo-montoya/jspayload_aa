@@ -1,0 +1,47 @@
+pool:
+  vmImage: ubuntu-16.04
+trigger:
+  - master
+steps:
+  - task: Npm@1
+    inputs:
+      command: install
+  - script: 'npm test'
+    displayName: 'Run unit tests'
+    continueOnError: true
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results'
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFiles: $(System.DefaultWorkingDirectory)/test-report.xml
+  - task: PublishCodeCoverageResults@1
+    displayName: 'Publish Code Coverage'
+    condition: 'in(variables[''Agent.JobStatus''], ''Succeeded'')'
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage/*coverage.xml'
+      reportDirectory: $(System.DefaultWorkingDirectory)/coverage
+  - task: ArchiveFiles@2
+    displayName: 'Archive sources'
+    inputs:
+      rootFolderOrFile: $(Build.SourcesDirectory)
+      includeRootFolder: false
+  - task: CopyFiles@2
+    displayName: 'Copy ARM templates'
+    inputs:
+      SourceFolder: deployment
+      Contents: '*.json'
+      TargetFolder: $(build.artifactstagingdirectory)/Templates
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: drop'
+  - task: FortifyOnDemandStatic@3
+    inputs:
+      FortifyProjects: 'https://github.com/ericmicrofocus/ContosoAir.git'
+      BSIToken: 'eyJ0ZW5hbnRJZCI6NjgsInRlbmFudENvZGUiOiJGcmFua2xpbkJhbmsiLCJyZWxlYXNlSWQiOjIxMTMyOCwicGF5bG9hZFR5cGUiOiJBTkFMWVNJU19QQVlMT0FEIiwiYXNzZXNzbWVudFR5cGVJZCI6Mjc0LCJ0ZWNobm9sb2d5VHlwZSI6IkpTL1RTL0hUTUwiLCJ0ZWNobm9sb2d5VHlwZUlkIjoxNiwidGVjaG5vbG9neVZlcnNpb24iOm51bGwsInRlY2hub2xvZ3lWZXJzaW9uSWQiOm51bGwsImF1ZGl0UHJlZmVyZW5jZSI6IkF1dG9tYXRlZCIsImF1ZGl0UHJlZmVyZW5jZUlkIjoyLCJpbmNsdWRlVGhpcmRQYXJ0eSI6ZmFsc2UsImluY2x1ZGVPcGVuU291cmNlQW5hbHlzaXMiOnRydWUsInBvcnRhbFVyaSI6Imh0dHBzOi8vYW1zLmZvcnRpZnkuY29tIiwiYXBpVXJpIjoiaHR0cHM6Ly9hcGkuYW1zLmZvcnRpZnkuY29tIiwic2NhblByZWZlcmVuY2UiOiJTdGFuZGFyZCIsInNjYW5QcmVmZXJlbmNlSWQiOjF9'
+      APIAuthenticationType: '2'
+      Username: 'eric_security_lead'
+      PersonalAccessTokenSecret: 'NlpvVHo_QlVSOCp3N0lreGFTVUJmZjN7WVI1cGFr0'
+      TenantID: 'FranklinBank'
+      EntitlementPreference: '2'
+      PurchaseEntitlements: false
+      PreferRemediation: false
